@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { API_URL } from '../config';
+import Sidebar from '../components/Sidebar';
 
 export default function GMDashboard() {
   const router = useRouter();
@@ -29,23 +30,16 @@ export default function GMDashboard() {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      
       if (!token || !userData) {
         router.push('/');
         return;
       }
-
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        
-        // Se NÃO for GM, redireciona
         if (parsedUser.role !== 'GM') {
-          if (parsedUser.role === 'Admin') {
-            router.push('/dashboard');
-          } else {
-            router.push('/player-dashboard');
-          }
+          if (parsedUser.role === 'Admin') router.push('/dashboard');
+          else router.push('/player-dashboard');
         }
       } catch (e) {
         router.push('/');
@@ -56,28 +50,18 @@ export default function GMDashboard() {
 
   const loadData = async () => {
     if (!user) return;
-    
     try {
       const token = localStorage.getItem('token');
-      
       if (activeSection === 'matches') {
-        // Buscar partidas criadas pelo GM
-        const response = await axios.get(`${API_URL}/match/user/${user.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(`${API_URL}/match/user/${user.id}`, { headers: { Authorization: `Bearer ${token}` } });
         setMatches(response.data.created || []);
       } else if (activeSection === 'players') {
-        // Buscar todos os jogadores das partidas do GM
-        const response = await axios.get(`${API_URL}/player`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        // Filtrar apenas jogadores das partidas criadas por este GM
+        const response = await axios.get(`${API_URL}/player`, { headers: { Authorization: `Bearer ${token}` } });
         const gmMatchIds = matches.map(m => m.id);
-        const filtered = response.data.filter((p: any) => gmMatchIds.includes(p.matchId));
-        setPlayers(filtered);
+        setPlayers(response.data.filter((p: any) => gmMatchIds.includes(p.matchId)));
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      // ignore
     }
   };
 
@@ -88,7 +72,7 @@ export default function GMDashboard() {
   };
 
   const getStatusColor = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'Finalizada': return '#888';
       case 'Cancelada': return '#ff6b6b';
       default: return '#4a9eff';
@@ -96,72 +80,44 @@ export default function GMDashboard() {
   };
 
   if (loading || !user) {
-    return <div style={styles.loading}>Carregando...</div>;
+    return <div className="flex items-center justify-center min-h-screen text-[#eaeaea] text-lg">Carregando...</div>;
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.sidebar}>
-        <h2 style={styles.logo}>BlackSecurity</h2>
-        <nav style={styles.nav}>
-          <div 
-            onClick={() => setActiveSection('matches')} 
-            style={{...styles.navLink, ...(activeSection === 'matches' ? styles.navLinkActive : {})}}
-          >
-            Minhas Partidas
-          </div>
-          <div 
-            onClick={() => setActiveSection('players')} 
-            style={{...styles.navLink, ...(activeSection === 'players' ? styles.navLinkActive : {})}}
-          >
-            Jogadores Ativos
-          </div>
-        </nav>
-        <div style={styles.userInfo}>
-          <div style={styles.userName}>{user.username}</div>
-          <button onClick={handleLogout} style={styles.logoutBtn}>Sair</button>
-        </div>
-      </div>
-
-      <div style={styles.main}>
+    <div className="flex min-h-screen bg-[#0f1419] font-sans">
+      <Sidebar currentPage="gm-dashboard" />
+      <main className="flex-1 p-10 overflow-auto">
         {activeSection === 'matches' && (
           <>
-            <h1 style={styles.title}>Minhas Partidas</h1>
-            <p style={styles.subtitle}>Partidas criadas e monitoradas por você</p>
-            
+            <h1 className="text-3xl text-[#eaeaea] font-bold mb-2">Minhas Partidas</h1>
+            <p className="text-sm text-gray-400 mb-7">Partidas criadas e monitoradas por você</p>
             {matches.length === 0 ? (
-              <div style={styles.emptyState}>
-                <p>Você ainda não criou nenhuma partida.</p>
-                <a href="/matches" style={styles.link}>Criar Partida</a>
+              <div className="bg-[#8D11ED] border border-[#2d3748] rounded-xl p-7 mb-7 text-center text-gray-300">
+                <p className="text-lg">Você ainda não criou nenhuma partida.</p>
+                <a href="/matches" className="inline-block mt-5 px-6 py-3 bg-[#7a0ed3] text-white rounded-lg font-bold hover:bg-[#8D11ED] transition">Criar Partida</a>
               </div>
             ) : (
-              <div style={styles.tableStyle}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="bg-[#8D11ED] border border-[#2d3748] rounded-xl p-7">
+                <table className="w-full border-collapse text-left">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #2d3748' }}>
-                      <th style={styles.thStyle}>ID Partida</th>
-                      <th style={styles.thStyle}>Jogo</th>
-                      <th style={styles.thStyle}>Status</th>
-                      <th style={styles.thStyle}>Jogadores</th>
-                      <th style={styles.thStyle}>Criada em</th>
-                      <th style={styles.thStyle}>Ações</th>
+                    <tr className="border-b border-[#2d3748]">
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">ID Partida</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Jogo</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Jogadores</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Criada em</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {matches.map((match) => (
-                      <tr key={match.id} style={{ borderBottom: '1px solid #2d3748' }}>
-                        <td style={styles.tdStyle}>#{match.matchId}</td>
-                        <td style={styles.tdStyle}>{match.game?.name || 'N/A'}</td>
-                        <td style={styles.tdStyle}>
-                          <span style={{ color: getStatusColor(match.status) }}>
-                            {match.status || 'Ativa'}
-                          </span>
-                        </td>
-                        <td style={styles.tdStyle}>{match.players?.length || 0}</td>
-                        <td style={styles.tdStyle}>{new Date(match.createdAt).toLocaleString('pt-BR')}</td>
-                        <td style={styles.tdStyle}>
-                          <a href="/matches" style={styles.actionLink}>Ver</a>
-                        </td>
+                    {matches.map((match: any) => (
+                      <tr key={match.id} className="border-b border-[#2d3748]">
+                        <td className="p-3 text-[#eaeaea]">#{match.matchId}</td>
+                        <td className="p-3 text-[#eaeaea]">{match.game?.name || 'N/A'}</td>
+                        <td className="p-3"><span style={{ color: getStatusColor(match.status) }}>{match.status || 'Ativa'}</span></td>
+                        <td className="p-3 text-[#eaeaea]">{match.players?.length || 0}</td>
+                        <td className="p-3 text-[#eaeaea]">{new Date(match.createdAt).toLocaleString('pt-BR')}</td>
+                        <td className="p-3"><a href="/matches" className="text-[#4a9eff] underline">Ver</a></td>
                       </tr>
                     ))}
                   </tbody>
@@ -170,46 +126,36 @@ export default function GMDashboard() {
             )}
           </>
         )}
-
         {activeSection === 'players' && (
           <>
-            <h1 style={styles.title}>Jogadores Ativos</h1>
-            <p style={styles.subtitle}>Jogadores nas suas partidas</p>
-            
+            <h1 className="text-3xl text-[#eaeaea] font-bold mb-2">Jogadores Ativos</h1>
+            <p className="text-sm text-gray-400 mb-7">Jogadores nas suas partidas</p>
             {players.length === 0 ? (
-              <div style={styles.emptyState}>
+              <div className="bg-[#8D11ED] border border-[#2d3748] rounded-xl p-7 text-center text-gray-300">
                 Nenhum jogador ativo nas suas partidas no momento.
               </div>
             ) : (
-              <div style={styles.tableStyle}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="bg-[#8D11ED] border border-[#2d3748] rounded-xl p-7">
+                <table className="w-full border-collapse text-left">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #2d3748' }}>
-                      <th style={styles.thStyle}>Username</th>
-                      <th style={styles.thStyle}>Partida</th>
-                      <th style={styles.thStyle}>Status</th>
-                      <th style={styles.thStyle}>Conectado</th>
-                      <th style={styles.thStyle}>Iniciado</th>
-                      <th style={styles.thStyle}>Finalizado</th>
+                    <tr className="border-b border-[#2d3748]">
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Username</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Partida</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Conectado</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Iniciado</th>
+                      <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">Finalizado</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {players.map((player) => (
-                      <tr key={player.id} style={{ borderBottom: '1px solid #2d3748' }}>
-                        <td style={styles.tdStyle}>{player.username}</td>
-                        <td style={styles.tdStyle}>#{player.match?.matchId || 'N/A'}</td>
-                        <td style={styles.tdStyle}>
-                          <span style={{ 
-                            color: player.finishedAt ? '#888' : 
-                                   player.startedAt ? '#00ff88' : '#4a9eff'
-                          }}>
-                            {player.finishedAt ? 'Finalizado' : 
-                             player.startedAt ? 'Monitorando' : 'Conectado'}
-                          </span>
-                        </td>
-                        <td style={styles.tdStyle}>{player.connectedAt ? new Date(player.connectedAt).toLocaleString('pt-BR') : 'N/A'}</td>
-                        <td style={styles.tdStyle}>{player.startedAt ? new Date(player.startedAt).toLocaleString('pt-BR') : '-'}</td>
-                        <td style={styles.tdStyle}>{player.finishedAt ? new Date(player.finishedAt).toLocaleString('pt-BR') : '-'}</td>
+                    {players.map((player: any) => (
+                      <tr key={player.id} className="border-b border-[#2d3748]">
+                        <td className="p-3 text-[#eaeaea]">{player.username}</td>
+                        <td className="p-3 text-[#eaeaea]">#{player.match?.matchId || 'N/A'}</td>
+                        <td className="p-3"><span style={{ color: player.finishedAt ? '#888' : player.startedAt ? '#00ff88' : '#4a9eff' }}>{player.finishedAt ? 'Finalizado' : player.startedAt ? 'Monitorando' : 'Conectado'}</span></td>
+                        <td className="p-3 text-[#eaeaea]">{player.connectedAt ? new Date(player.connectedAt).toLocaleString('pt-BR') : 'N/A'}</td>
+                        <td className="p-3 text-[#eaeaea]">{player.startedAt ? new Date(player.startedAt).toLocaleString('pt-BR') : '-'}</td>
+                        <td className="p-3 text-[#eaeaea]">{player.finishedAt ? new Date(player.finishedAt).toLocaleString('pt-BR') : '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -218,126 +164,8 @@ export default function GMDashboard() {
             )}
           </>
         )}
-      </div>
+      </main>
     </div>
   );
 }
-
-const styles: any = {
-  container: {
-    display: 'flex',
-    minHeight: '100vh',
-    background: '#0f1419',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-  },
-  sidebar: {
-    width: '250px',
-    background: '#1a1a2e',
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    borderRight: '1px solid #16213e',
-  },
-  logo: {
-    color: '#eaeaea',
-    fontSize: '24px',
-    fontWeight: 'bold',
-    marginBottom: '30px',
-  },
-  nav: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    flex: 1,
-  },
-  navLink: {
-    color: '#888',
-    padding: '12px',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    transition: 'all 0.3s',
-  },
-  navLinkActive: {
-    background: '#0f3460',
-    color: '#eaeaea',
-  },
-  userInfo: {
-    marginTop: 'auto',
-    borderTop: '1px solid #16213e',
-    paddingTop: '20px',
-  },
-  userName: {
-    color: '#eaeaea',
-    marginBottom: '10px',
-  },
-  logoutBtn: {
-    width: '100%',
-    padding: '10px',
-    background: '#ff3366',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  },
-  main: {
-    flex: 1,
-    padding: '40px',
-  },
-  title: {
-    color: '#eaeaea',
-    fontSize: '32px',
-    fontWeight: 'bold',
-    marginBottom: '5px',
-  },
-  subtitle: {
-    color: '#888',
-    fontSize: '14px',
-    marginBottom: '30px',
-  },
-  tableStyle: {
-    background: '#1e2749',
-    borderRadius: '10px',
-    padding: '20px',
-    border: '1px solid #2d3748',
-  },
-  thStyle: {
-    padding: '15px',
-    textAlign: 'left',
-    color: '#888',
-  },
-  tdStyle: {
-    padding: '15px',
-    color: '#eaeaea',
-  },
-  emptyState: {
-    background: '#1e2749',
-    borderRadius: '10px',
-    padding: '40px',
-    textAlign: 'center',
-    color: '#888',
-    border: '1px solid #2d3748',
-  },
-  link: {
-    display: 'inline-block',
-    marginTop: '20px',
-    padding: '12px 24px',
-    background: '#0f3460',
-    color: '#eaeaea',
-    textDecoration: 'none',
-    borderRadius: '5px',
-  },
-  actionLink: {
-    color: '#4a9eff',
-    textDecoration: 'none',
-    cursor: 'pointer',
-  },
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    color: '#eaeaea',
-    fontSize: '18px',
-  },
-};
 

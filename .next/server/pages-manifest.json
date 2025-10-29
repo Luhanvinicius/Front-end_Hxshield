@@ -1,1 +1,9 @@
-{}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/matches": "pages/matches.js",
+  "/gm-register": "pages/gm-register.js",
+  "/dashboard": "pages/dashboard.js",
+  "/licenses": "pages/licenses.js"
+}

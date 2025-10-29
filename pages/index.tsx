@@ -1,28 +1,31 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/router';
-import { API_URL } from '../config';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useRouter } from "next/router";
+import { API_URL } from "../config";
 
 export default function Login() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Check if already logged in
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
       if (token) {
-        router.push('/dashboard');
+        router.push("/dashboard");
       }
     }
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
+    setServerError("");
     setLoading(true);
 
     try {
@@ -32,154 +35,166 @@ export default function Login() {
       });
 
       if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
         // Redireciona baseado no role
         const userRole = response.data.user.role;
-        if (userRole === 'User') {
-          router.push('/player-dashboard');
-        } else if (userRole === 'GM') {
-          router.push('/gm-dashboard');
+        if (userRole === "User") {
+          router.push("/player-dashboard");
+        } else if (userRole === "GM") {
+          router.push("/gm-dashboard");
         } else {
-          router.push('/dashboard');
+          router.push("/dashboard");
         }
+        return;
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Erro ao fazer login');
-    } finally {
-      setLoading(false);
+      setError("Usuário ou senha inválidos");
+    } catch (error: any) {
+      // AxiosError typing friendly
+      if (error.response) {
+        // Erro tratado pela API (400, 401, 403...)
+        if (error.response.status === 401 || error.response.status === 400) {
+          setError("Usuário ou senha inválidos");
+        } else {
+          setServerError(
+            error.response.data?.message || "Erro desconhecido do servidor."
+          );
+        }
+      } else {
+        setServerError("Erro de conexão com o servidor. Tente novamente.");
+      }
     }
+    setLoading(false);
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>BlackSecurity</h1>
-        <p style={styles.subtitle}>Painel Administrativo</p>
-
-        <form onSubmit={handleLogin} style={styles.form}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Usuário</label>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#000] to-[#15001a] p-5">
+      <div className="w-full max-w-lg mx-auto bg-transparent rounded-2xl shadow-2xl p-12 backdrop-blur-3xl border-2 border-[#8D11ED]">
+        <img
+          src="/logohx.png"
+          alt="Hxshield Logo"
+          className="mx-auto mb-4 w-60 h-36 "
+        />
+        <h1 className="text-2xl font-semibold text-center text-[#8D11ED] mb-6">
+          Bem-vindo ao Hshield
+        </h1>
+        {error && (
+          <div className="mt-1 mb-4 text-center text-red-600 font-semibold  py-2 rounded">
+            {error}
+          </div>
+        )}
+        {serverError && (
+          <div className="mt-1 mb-4 text-center text-orange-500 font-semibold  py-2 rounded">
+            {serverError}
+          </div>
+        )}
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label
+              htmlFor="username"
+              className="block mb-1 font-semibold text-white"
+            >
+              Usuário
+            </label>
             <input
+              id="username"
+              name="username"
               type="text"
+              placeholder="Digite seu Usuário"
+              required
+              autoFocus
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              style={styles.input}
-              placeholder="Digite seu usuário"
-              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8D11ED] focus:border-transparent text-white"
             />
           </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Senha</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              placeholder="Digite sua senha"
-              required
-            />
+          <div>
+            <label
+              htmlFor="password"
+              className="block mb-1 font-semibold text-white"
+            >
+              Senha
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                placeholder="Digite sua senha"
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8D11ED] focus:border-transparent text-white pr-10"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                className="absolute top-1/2 right-2 -translate-y-1/2 p-1 text-gray-400 hover:text-[#8D11ED] focus:outline-none"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9-4.03-9-7 0-1.11.335-2.163.946-3.13M10.05 6.175c.638-.11 1.3-.175 1.95-.175 5 0 9 4.03 9 7 0 1.556-.579 3.012-1.63 4.33M9.88 9.88a3 3 0 104.24 4.24"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 3l18 18"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
-
-          {error && <div style={styles.error}>{error}</div>}
-
           <button
             type="submit"
-            style={styles.button}
             disabled={loading}
+            className="w-full mt-6 py-2 cursor-pointer bg-[#8D11ED] hover:bg-[#7a0ed3] hover:scale-[1.02] transition-all text-white font-bold rounded-lg duration-200 focus:outline-none focus:ring-2 focus:ring-[#8D11ED] disabled:bg-[#8D11ED]"
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? "Entrando..." : "Entrar"}
           </button>
-          
-          <div style={{textAlign: 'center', marginTop: '20px'}}>
-            <a href="/register" style={{color: '#0f3460', textDecoration: 'none', fontSize: '14px'}}>
-              Não tem conta? Cadastre-se
-            </a>
-          </div>
         </form>
+        <div className="h-1 rounded-full mx-auto bg-white mt-12"></div>
+        <p className="text-center text-white py-6">OU</p>
+        <a href="/register">
+          <button className="w-full py-2 cursor-pointer bg-[#8D11ED] hover:bg-[#7a0ed3] hover:scale-[1.02] transition-all text-white font-bold rounded-lg duration-200 focus:outline-none focus:ring-2 focus:ring-[#8D11ED] disabled:bg-[#8D11ED]">
+            Criar conta
+          </button>
+        </a>
       </div>
-    </div>
+    </main>
   );
 }
-
-const styles: any = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-  },
-  card: {
-    background: '#1e2749',
-    borderRadius: '10px',
-    padding: '40px',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-    width: '100%',
-    maxWidth: '400px',
-  },
-  title: {
-    color: '#eaeaea',
-    fontSize: '32px',
-    fontWeight: 'bold',
-    marginBottom: '10px',
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: '#888',
-    fontSize: '14px',
-    textAlign: 'center',
-    marginBottom: '30px',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  formGroup: {
-    marginBottom: '20px',
-  },
-  label: {
-    display: 'block',
-    color: '#eaeaea',
-    marginBottom: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-  },
-  input: {
-    width: '100%',
-    padding: '12px',
-    borderRadius: '5px',
-    border: '1px solid #2d3748',
-    background: '#16213e',
-    color: '#eaeaea',
-    fontSize: '14px',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  button: {
-    width: '100%',
-    padding: '12px',
-    borderRadius: '5px',
-    border: 'none',
-    background: '#0f3460',
-    color: '#eaeaea',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    transition: 'background 0.3s',
-    marginTop: '10px',
-  },
-  error: {
-    background: '#ff3366',
-    color: 'white',
-    padding: '12px',
-    borderRadius: '5px',
-    marginBottom: '15px',
-    fontSize: '14px',
-  },
-};
-
-

@@ -2,13 +2,38 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { API_URL } from '../config';
+import Sidebar from '../components/Sidebar';
+import Image from 'next/image';
+
+function ConfirmModal({ open, onClose, onConfirm, title, message }: { open: boolean, onClose: () => void, onConfirm: () => void, title: string, message: string }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-[#1a1a2e] border-2 border-[#8D11ED] rounded-2xl shadow-xl p-8 max-w-xs w-full relative animate-[fadeIn_.25s]">
+        <h2 className="text-xl font-bold text-[#8D11ED] text-center mb-3">{title}</h2>
+        <p className="text-white text-center mb-7">{message}</p>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-gray-700 text-white rounded-lg font-bold hover:bg-gray-600 focus:outline-none"
+          >Cancelar</button>
+          <button
+            onClick={onConfirm}
+            className="px-6 py-2 bg-[#8D11ED] text-white rounded-lg font-bold hover:bg-[#7a0ed3] focus:outline-none"
+          >Confirmar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any>({});
   const [loading, setLoading] = useState(true);
-
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const logo = [{ image: "/logohx.png", alt: "logo" }];
   useEffect(() => {
     checkAuth();
     loadStats();
@@ -18,12 +43,10 @@ export default function Dashboard() {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      
       if (!token) {
         router.push('/');
         return;
       }
-
       setUser(JSON.parse(userData || '{}'));
     }
   };
@@ -31,7 +54,7 @@ export default function Dashboard() {
   const loadStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [licenses, clients, detections] = await Promise.all([
+      const [licenses, clients, detections, matchStats] = await Promise.all([
         axios.get(`${API_URL}/license`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -45,7 +68,6 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
-
       setStats({
         totalLicenses: licenses.data.length,
         activeLicenses: licenses.data.filter((l: any) => l.isActive).length,
@@ -66,190 +88,84 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     router.push('/');
   };
 
   if (loading) {
-    return <div style={styles.loading}>Carregando...</div>;
+    return <div className="flex items-center justify-center min-h-screen text-gray-200 text-lg">Carregando...</div>;
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.sidebar}>
-        <h2 style={styles.logo}>BlackSecurity</h2>
-        <nav style={styles.nav}>
-          <a href="/dashboard" style={{...styles.navLink, ...styles.navLinkActive}}>
-            Dashboard
-          </a>
-          <a href="/matches" style={styles.navLink}>Partidas</a>
-          <a href="/players" style={styles.navLink}>Jogadores</a>
-          <a href="/gm-register" style={styles.navLink}>Cadastro de GM</a>
-          <a href="/licenses" style={styles.navLink}>Licenças</a>
-          <a href="/clients" style={styles.navLink}>Clientes</a>
-          <a href="/banned" style={styles.navLink}>Lista de Banidos</a>
-          <a href="/detections" style={styles.navLink}>Detecções</a>
-        </nav>
-        <div style={styles.userInfo}>
-          <div>{user?.username}</div>
-          <button onClick={handleLogout} style={styles.logoutBtn}>
-            Sair
-          </button>
+    <div className="flex min-h-screen bg-[#0f1419] font-sans">
+      <ConfirmModal
+        open={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+        title="Sair do Sistema"
+        message="Tem certeza que deseja sair? Deseja realmente finalizar sua sessão?"
+      />
+      <Sidebar currentPage="dashboard" />
+      <main className="flex-1 p-10 overflow-auto">
+        <h1 className="text-3xl text-[#eaeaea] font-bold mb-8">Dashboard</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+          <DashboardStat
+            label="Total de Licenças"
+            value={stats.totalLicenses || 0}
+          />
+          <DashboardStat
+            label="Licenças Ativas"
+            value={stats.activeLicenses || 0}
+          />
+          <DashboardStat
+            label="Total de Clientes"
+            value={stats.totalClients || 0}
+          />
+          <DashboardStat
+            label="Clientes Banidos"
+            value={stats.bannedClients || 0}
+          />
+          <DashboardStat
+            label="Total de Detecções"
+            value={stats.totalDetections || 0}
+          />
+          <DashboardStat
+            label="Detecções Pendentes"
+            value={stats.unresolvedDetections || 0}
+          />
+          <DashboardStat
+            label="Usuários Ativos"
+            value={stats.activePlayers || 0}
+          />
+          <DashboardStat
+            label="Total de usuários"
+            value={stats.totalPlayers || 0}
+          />
+          <DashboardStat
+            label="Salas Ativas"
+            value={stats.activeMatches || 0}
+          />
+          <DashboardStat
+            label="Salas Encerradas"
+            value={stats.finishedMatches || 0}
+          />
         </div>
-      </div>
-
-      <div style={styles.main}>
-        <h1 style={styles.title}>Dashboard</h1>
-
-        <div style={styles.statsGrid}>
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Total de Licenças</h3>
-            <p style={styles.statValue}>{stats.totalLicenses || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Licenças Ativas</h3>
-            <p style={styles.statValue}>{stats.activeLicenses || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Total de Clientes</h3>
-            <p style={styles.statValue}>{stats.totalClients || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Clientes Banidos</h3>
-            <p style={styles.statValue}>{stats.bannedClients || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Total de Detecções</h3>
-            <p style={styles.statValue}>{stats.totalDetections || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Detecções Pendentes</h3>
-            <p style={styles.statValue}>{stats.unresolvedDetections || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Jogadores Ativos</h3>
-            <p style={styles.statValue}>{stats.activePlayers || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Total de Jogadores</h3>
-            <p style={styles.statValue}>{stats.totalPlayers || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Salas Ativas</h3>
-            <p style={styles.statValue}>{stats.activeMatches || 0}</p>
-          </div>
-
-          <div style={styles.statCard}>
-            <h3 style={styles.statLabel}>Salas Encerradas</h3>
-            <p style={styles.statValue}>{stats.finishedMatches || 0}</p>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
 
-const styles: any = {
-  container: {
-    display: 'flex',
-    minHeight: '100vh',
-    background: '#0f1419',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-  },
-  sidebar: {
-    width: '250px',
-    background: '#1a1a2e',
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    borderRight: '1px solid #16213e',
-  },
-  logo: {
-    color: '#eaeaea',
-    fontSize: '24px',
-    fontWeight: 'bold',
-    marginBottom: '30px',
-  },
-  nav: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-  },
-  navLink: {
-    color: '#888',
-    textDecoration: 'none',
-    padding: '12px',
-    borderRadius: '5px',
-    transition: 'all 0.3s',
-  },
-  navLinkActive: {
-    background: '#0f3460',
-    color: '#eaeaea',
-  },
-  userInfo: {
-    marginTop: 'auto',
-    paddingTop: '20px',
-    borderTop: '1px solid #16213e',
-  },
-  logoutBtn: {
-    width: '100%',
-    padding: '10px',
-    background: '#ff3366',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    marginTop: '10px',
-  },
-  main: {
-    flex: 1,
-    padding: '40px',
-    overflow: 'auto',
-  },
-  title: {
-    color: '#eaeaea',
-    fontSize: '32px',
-    fontWeight: 'bold',
-    marginBottom: '30px',
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '20px',
-  },
-  statCard: {
-    background: '#1e2749',
-    padding: '30px',
-    borderRadius: '10px',
-    border: '1px solid #2d3748',
-  },
-  statLabel: {
-    color: '#888',
-    fontSize: '14px',
-    marginBottom: '10px',
-  },
-  statValue: {
-    color: '#eaeaea',
-    fontSize: '36px',
-    fontWeight: 'bold',
-    margin: 0,
-  },
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    color: '#eaeaea',
-    fontSize: '18px',
-  },
-};
+function DashboardStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-[#2d3748] p-8 rounded-xl border border-[#2d3748] flex flex-col items-center shadow">
+      <h3 className="text-gray-400 text-sm mb-2 font-semibold">{label}</h3>
+      <p className="text-[#eaeaea] text-3xl font-bold m-0">{value}</p>
+    </div>
+  );
+}
 

@@ -2,21 +2,60 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { API_URL } from '../config';
+import Sidebar from '../components/Sidebar';
+
+function ConfirmModal({ open, onClose, onConfirm, title, message, input, inputValue, onInputChange }: {
+  open: boolean, onClose: () => void, onConfirm: () => void, title: string, message: string, input?: boolean, inputValue?: string, onInputChange?: (v: string) => void
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-[#1a1a2e] border-2 border-[#8D11ED] rounded-2xl shadow-xl p-8 max-w-xs w-full relative animate-[fadeIn_.25s]">
+        <h2 className="text-xl font-bold text-[#8D11ED] text-center mb-3">{title}</h2>
+        <p className="text-white text-center mb-7">{message}</p>
+        {input && (
+          <input
+            className="w-full mb-7 p-2 rounded bg-black text-white border border-[#8D11ED] focus:outline-none"
+            placeholder="Motivo do banimento"
+            value={inputValue}
+            onChange={e => onInputChange && onInputChange(e.target.value)}
+          />
+        )}
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 cursor-pointer bg-gray-700 text-white rounded-lg font-bold hover:bg-gray-600 focus:outline-none"
+          >Cancelar</button>
+          <button
+            onClick={onConfirm}
+            className="px-6 py-2 cursor-pointer bg-[#8D11ED] text-white rounded-lg font-bold hover:bg-[#7a0ed3] focus:outline-none"
+            disabled={input && !inputValue}
+          >Confirmar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Players() {
   const router = useRouter();
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  // Modal states
+  const [showLogout, setShowLogout] = useState(false);
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [banUser, setBanUser] = useState<any>(null);
+  const [banReason, setBanReason] = useState("");
+  const [showUnbanModal, setShowUnbanModal] = useState(false);
+  const [unbanUser, setUnbanUser] = useState<any>(null);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
     loadPlayers();
-    
-    // Atualiza a cada 3 segundos
     const interval = setInterval(() => {
       loadPlayers();
     }, 3000);
-    
     return () => clearInterval(interval);
   }, []);
 
@@ -33,9 +72,6 @@ export default function Players() {
       const response = await axios.get(`${API_URL}/auth/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      console.log('Users loaded:', response.data);
-      console.log('Count:', response.data?.length || 0);
       setPlayers(response.data);
     } catch (error: any) {
       console.error('Error loading users:', error.response?.data || error.message);
@@ -49,117 +85,170 @@ export default function Players() {
     return new Date(date).toLocaleString('pt-BR');
   };
 
-  const getStatusColor = (player: any) => {
-    if (player.finishedAt) return '#888';
-    if (player.startedAt) return '#00ff88';
-    if (player.connectedAt) return '#4a9eff';
-    return '#eaeaea';
+  const handleLogout = () => setShowLogout(true);
+  const confirmLogout = () => {
+    localStorage.clear();
+    router.push('/');
   };
 
-  const getStatusText = (player: any) => {
-    if (player.finishedAt) return 'Finalizado';
-    if (player.startedAt) return 'Monitorando';
-    if (player.connectedAt) return 'Conectado';
-    return 'Inativo';
+  const handleBan = (user: any) => {
+    setBanUser(user);
+    setBanReason("");
+    setShowBanModal(true);
   };
-
-  const handleBan = async (userId: number, username: string) => {
-    const reason = prompt(`Digite o motivo do banimento para ${username}:`);
-    if (!reason) return;
-
+  const confirmBan = async () => {
+    if (!banUser || !banReason) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_URL}/auth/users/${userId}/ban`, 
-        { reason },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert(`${username} foi banido!`);
+      await axios.post(`${API_URL}/auth/users/${banUser.id}/ban`, { reason: banReason }, { headers: { Authorization: `Bearer ${token}` } });
+      setStatusMsg(`${banUser.username} foi banido!`);
+      setShowBanModal(false);
+      setTimeout(() => setStatusMsg(null), 2400);
       loadPlayers();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro ao banir usuário');
+      setStatusMsg(error.response?.data?.message || 'Erro ao banir usuário');
+      setTimeout(() => setStatusMsg(null), 2400);
     }
   };
 
-  const handleUnban = async (userId: number, username: string) => {
+  const handleUnban = (user: any) => {
+    setUnbanUser(user);
+    setShowUnbanModal(true);
+  };
+  const confirmUnban = async () => {
+    if (!unbanUser) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_URL}/auth/users/${userId}/unban`, 
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert(`${username} foi desbanido!`);
+      await axios.post(`${API_URL}/auth/users/${unbanUser.id}/unban`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setStatusMsg(`${unbanUser.username} foi desbanido!`);
+      setShowUnbanModal(false);
+      setTimeout(() => setStatusMsg(null), 2400);
       loadPlayers();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro ao desbanir usuário');
+      setStatusMsg(error.response?.data?.message || 'Erro ao desbanir usuário');
+      setTimeout(() => setStatusMsg(null), 2400);
     }
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={sidebarStyle}>
-        <h2 style={logoStyle}>BlackSecurity</h2>
-        <nav style={navStyle}>
-          <a href="/dashboard" style={navLinkStyle}>Dashboard</a>
-          <a href="/matches" style={navLinkStyle}>Partidas</a>
-          <a href="/players" style={{...navLinkStyle, ...activeLinkStyle}}>Jogadores</a>
-          <a href="/gm-register" style={navLinkStyle}>Cadastro de GM</a>
-          <a href="/licenses" style={navLinkStyle}>Licenças</a>
-          <a href="/clients" style={navLinkStyle}>Clientes</a>
-          <a href="/banned" style={navLinkStyle}>Lista de Banidos</a>
-        </nav>
-        <div style={userInfoStyle}>
-          <button onClick={() => { localStorage.clear(); router.push('/'); }} style={logoutBtnStyle}>
-            Sair
-          </button>
+    <div className="flex min-h-screen bg-black">
+      {/* Modais universais */}
+      <ConfirmModal
+        open={showLogout}
+        onClose={() => setShowLogout(false)}
+        onConfirm={confirmLogout}
+        title="Sair da Plataforma"
+        message="Tem certeza que deseja sair da aplicação?"
+      />
+      <ConfirmModal
+        open={showBanModal}
+        onClose={() => setShowBanModal(false)}
+        onConfirm={confirmBan}
+        title={`Banir ${banUser?.username}`}
+        message={`Deseja banir o usuário? Informe o motivo abaixo:`}
+        input={true}
+        inputValue={banReason}
+        onInputChange={setBanReason}
+      />
+      <ConfirmModal
+        open={showUnbanModal}
+        onClose={() => setShowUnbanModal(false)}
+        onConfirm={confirmUnban}
+        title={`Desbanir ${unbanUser?.username}`}
+        message={`Você tem certeza que deseja desbanir este usuário?`}
+      />
+      {/* Notificação modal */}
+      {statusMsg && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-[#1a1a2e] border-2 border-[#8D11ED] z-50 px-8 py-3 rounded-xl shadow-xl text-white font-semibold animate-[fadeIn_.2s]">
+          {statusMsg}
         </div>
-      </div>
-
-      <div style={mainStyle}>
-        <h1 style={titleStyle}>Jogadores</h1>
-
+      )}
+      <Sidebar currentPage="players" />
+      <main className="flex-1 p-10 overflow-auto">
+        <h1 className="text-3xl text-[#eaeaea] font-bold mb-8">Jogadores</h1>
         {loading ? (
-          <div style={loadingStyle}>Carregando...</div>
+          <div className="flex items-center justify-center text-[#eaeaea] text-lg py-12">
+            Carregando...
+          </div>
         ) : (
-          <div style={tableStyle}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="bg-[#1e2749] rounded-xl p-6 border border-[#2d3748] overflow-x-auto">
+            <table className="w-full border-collapse text-left">
               <thead>
-                <tr style={{ borderBottom: '1px solid #2d3748' }}>
-                  <th style={thStyle}>Username</th>
-                  <th style={thStyle}>Nome</th>
-                  <th style={thStyle}>Nickname</th>
-                  <th style={thStyle}>Email</th>
-                  <th style={thStyle}>CPF</th>
-                  <th style={thStyle}>Cadastrado em</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Ações</th>
+                <tr className="border-b border-[#2d3748]">
+                  <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">
+                    Nome
+                  </th>
+                  <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">
+                    Nickname
+                  </th>
+                  <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">
+                    CPF
+                  </th>
+                  <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">
+                    Cadastrado em
+                  </th>
+                  <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="p-3 text-xs text-gray-400 uppercase tracking-wider">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {players.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{textAlign: 'center', padding: '40px', color: '#888'}}>
+                    <td
+                      colSpan={8}
+                      className="text-center py-10 text-lg text-gray-400"
+                    >
                       Nenhum jogador encontrado
                     </td>
                   </tr>
                 ) : (
                   players.map((player) => (
-                    <tr key={player.id} style={{ borderBottom: '1px solid #2d3748' }}>
-                      <td style={tdStyle}>{player.username}</td>
-                      <td style={tdStyle}>{player.fullName || 'Não informado'}</td>
-                      <td style={tdStyle}>{player.nickname || 'Não informado'}</td>
-                      <td style={tdStyle}>{player.email}</td>
-                      <td style={tdStyle}>{player.cpf || 'Não informado'}</td>
-                      <td style={tdStyle}>{formatDate(player.createdAt)}</td>
-                      <td style={{...tdStyle, color: player.isActive ? '#00ff88' : '#ff6b6b'}}>
-                        {player.isActive ? 'Ativo' : 'Inativo'}
+                    <tr key={player.id} className="border-b border-[#2d3748]">
+                      <td className="p-3 text-[#eaeaea]">{player.username}</td>
+                      <td className="p-3 text-[#eaeaea]">
+                        {player.fullName || "Não informado"}
                       </td>
-                      <td style={tdStyle}>
+                      <td className="p-3 text-[#eaeaea]">
+                        {player.nickname || "Não informado"}
+                      </td>
+                      <td className="p-3 text-[#eaeaea]">{player.email}</td>
+                      <td className="p-3 text-[#eaeaea]">
+                        {player.cpf || "Não informado"}
+                      </td>
+                      <td className="p-3 text-[#eaeaea]">
+                        {formatDate(player.createdAt)}
+                      </td>
+                      <td
+                        className="p-3 font-bold"
+                        style={{
+                          color: player.isActive ? "#00ff88" : "#ff6b6b",
+                        }}
+                      >
+                        {player.isActive ? "Ativo" : "Inativo"}
+                      </td>
+                      <td className="p-3">
                         {player.isActive ? (
-                          <button onClick={() => handleBan(player.id, player.username)} style={banButtonStyle}>
+                          <button
+                            onClick={() => handleBan(player)}
+                            className="px-3 py-1 bg-[#7a0ed3] cursor-pointer text-white rounded font-bold text-xs hover:bg-[#8D11ED]"
+                          >
                             Banir
                           </button>
                         ) : (
-                          <button onClick={() => handleUnban(player.id, player.username)} style={unbanButtonStyle}>
+                          <button
+                            onClick={() => handleUnban(player)}
+                            className="px-3 py-1 bg-[#7a0ed3] cursor-pointer text-white rounded font-bold text-xs hover:bg-[#8D11ED]"
+                          >
                             Desbanir
                           </button>
                         )}
@@ -171,26 +260,8 @@ export default function Players() {
             </table>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
-
-// Styles
-const containerStyle = { display: 'flex', minHeight: '100vh', background: '#0f1419' };
-const sidebarStyle = { width: '250px', background: '#1a1a2e', padding: '20px', display: 'flex', flexDirection: 'column', borderRight: '1px solid #16213e' };
-const logoStyle = { color: '#eaeaea', fontSize: '24px', fontWeight: 'bold', marginBottom: '30px' };
-const navStyle = { display: 'flex', flexDirection: 'column', gap: '10px' };
-const navLinkStyle = { color: '#888', textDecoration: 'none', padding: '12px', borderRadius: '5px', transition: 'all 0.3s' };
-const activeLinkStyle = { background: '#0f3460', color: '#eaeaea' };
-const userInfoStyle = { marginTop: 'auto' };
-const logoutBtnStyle = { width: '100%', padding: '10px', background: '#ff3366', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' };
-const mainStyle = { flex: 1, padding: '40px' };
-const titleStyle = { color: '#eaeaea', fontSize: '32px', fontWeight: 'bold', marginBottom: '30px' };
-const tableStyle = { background: '#1e2749', borderRadius: '10px', padding: '20px', border: '1px solid #2d3748' };
-const thStyle = { padding: '15px', textAlign: 'left', color: '#888' };
-const tdStyle = { padding: '15px', color: '#eaeaea' };
-const loadingStyle = { color: '#eaeaea', fontSize: '18px', textAlign: 'center', padding: '40px' };
-const banButtonStyle = { padding: '6px 12px', background: '#ff3366', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' };
-const unbanButtonStyle = { padding: '6px 12px', background: '#00ff88', color: '#0f1419', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' };
 
