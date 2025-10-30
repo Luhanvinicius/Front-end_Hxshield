@@ -32,6 +32,20 @@ export default function PlayerDashboard() {
     setLoading(false);
   };
 
+  // Função para formatar CPF
+  const formatCPF = (cpf: string | null | undefined): string => {
+    if (!cpf) return 'Não informado';
+    // Remove tudo que não é número
+    const numbers = cpf.replace(/\D/g, "");
+    if (numbers.length === 0) return 'Não informado';
+    // Se tiver mais de 11 dígitos, pega apenas os últimos 11
+    // Se tiver menos de 11, retorna como está (pode ser incompleto)
+    const cpfNumbers = numbers.length > 11 ? numbers.slice(-11) : numbers;
+    if (cpfNumbers.length !== 11) return cpf; // Retorna como está se não tiver 11 dígitos
+    // Aplica a máscara: 000.000.000-00
+    return `${cpfNumbers.slice(0, 3)}.${cpfNumbers.slice(3, 6)}.${cpfNumbers.slice(6, 9)}-${cpfNumbers.slice(9, 11)}`;
+  };
+
 
   if (loading || !user) {
     return <div className="flex items-center justify-center min-h-screen text-[#eaeaea] text-lg">Carregando...</div>;
@@ -103,7 +117,7 @@ export default function PlayerDashboard() {
             </div>
             <div className="bg-[#8D11ED] border border-[#2d3748] rounded-xl p-7 mb-7">
               <h3 className="text-sm text-gray-200 font-semibold mb-3">CPF</h3>
-              <p className="text-xl text-white m-0 font-medium">{user.cpf || 'Não informado'}</p>
+              <p className="text-xl text-white m-0 font-medium">{formatCPF(user.cpf)}</p>
             </div>
           </>
         )}

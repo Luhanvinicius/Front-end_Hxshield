@@ -26,9 +26,8 @@ export default function Matches() {
   const [formData, setFormData] = useState({ matchId: "", password: "", gameId: 1, gameMaster: "Admin", description: "" });
   const [gmFormData, setGMFormData] = useState({ username: "", email: "", password: "" });
   const [modalMsg, setModalMsg] = useState("");
-  const [confirmType, setConfirmType] = useState<null | { type: string, matchId: string }>();
+  const [confirmType, setConfirmType] = useState<null | { matchId: string }>();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showToggleModal, setShowToggleModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
 
   // Função para gerar ID único de 6 dígitos
@@ -134,21 +133,13 @@ export default function Matches() {
     }
   };
 
-  const cancelMatch = (matchId: string) =>
-    setConfirmType({ type: "cancel", matchId });
   const finalizeMatch = (matchId: string) =>
-    setConfirmType({ type: "finalize", matchId });
+    setConfirmType({ matchId });
 
   // Função para abrir modal de deletar partida
   const openDeleteModal = (match: any) => {
     setSelectedMatch(match);
     setShowDeleteModal(true);
-  };
-
-  // Função para abrir modal de ativar/desativar partida
-  const openToggleModal = (match: any) => {
-    setSelectedMatch(match);
-    setShowToggleModal(true);
   };
 
   // Função para deletar partida
@@ -169,39 +160,16 @@ export default function Matches() {
     }
   };
 
-  // Função para ativar/desativar partida
-  const toggleMatchStatus = async () => {
-    if (!selectedMatch) return;
-    try {
-      const token = localStorage.getItem("token") || '';
-      const newStatus = selectedMatch.isActive ? 'inactive' : 'active';
-      await axios.patch(`${API_URL}/match/${selectedMatch.matchId}/status`, 
-        { isActive: !selectedMatch.isActive }, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setModalMsg(`Partida ${selectedMatch.matchId} ${newStatus === 'active' ? 'ativada' : 'desativada'} com sucesso!`);
-      setShowToggleModal(false);
-      loadData();
-    } catch (error: any) {
-      setModalMsg(error.response?.data?.message || "Erro ao alterar status da partida");
-    } finally {
-      setTimeout(() => setModalMsg(""), 2500);
-    }
-  };
-
   const handleConfirmModal = async () => {
     if (!confirmType) return;
-    const { type, matchId } = confirmType;
+    const { matchId } = confirmType;
     try {
       const token = localStorage.getItem("token") || '';
-      const url = type === "cancel"
-        ? `${API_URL}/match/${matchId}/cancel`
-        : `${API_URL}/match/${matchId}/finalize`;
-      await axios.post(url, {}, { headers: { Authorization: `Bearer ${token}` } });
-      setModalMsg(`Partida ${type === "cancel" ? "cancelada" : "finalizada"} com sucesso!`);
+      await axios.post(`${API_URL}/match/${matchId}/finalize`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setModalMsg("Partida finalizada com sucesso!");
       loadData();
     } catch (error: any) {
-      setModalMsg(error.response?.data?.message || `Erro ao ${confirmType.type === "cancel" ? "cancelar" : "finalizar"} partida`);
+      setModalMsg(error.response?.data?.message || "Erro ao finalizar partida");
     } finally {
       setConfirmType(null);
       setTimeout(() => setModalMsg("") , 2500);
@@ -225,14 +193,10 @@ export default function Matches() {
       </Modal>
       <Modal open={!!confirmType} onClose={() => setConfirmType(null)}>
         <h3 className="text-lg font-bold text-[#8D11ED] mb-4 text-center">
-          {confirmType?.type === "cancel"
-            ? "Cancelar partida"
-            : "Finalizar partida"}
+          Finalizar partida
         </h3>
         <p className="text-white text-center mb-7">
-          Deseja realmente{" "}
-          {confirmType?.type === "cancel" ? "cancelar" : "finalizar"} esta
-          partida?
+          Deseja realmente finalizar esta partida?
         </p>
         <div className="flex justify-center gap-4">
           <button
@@ -275,35 +239,6 @@ export default function Matches() {
             className="px-6 py-2 bg-[#ff3366] text-white rounded-lg font-bold hover:bg-[#ff4a80]"
           >
             Deletar
-          </button>
-        </div>
-      </Modal>
-
-      {/* Modal de ativar/desativar partida */}
-      <Modal open={showToggleModal} onClose={() => setShowToggleModal(false)}>
-        <h3 className="text-lg font-bold text-[#8D11ED] mb-4 text-center">
-          {selectedMatch?.isActive ? "Desativar" : "Ativar"} Partida
-        </h3>
-        <p className="text-white text-center mb-7">
-          Deseja {selectedMatch?.isActive ? "desativar" : "ativar"} a partida{" "}
-          <strong>{selectedMatch?.matchId}</strong>?
-        </p>
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={() => setShowToggleModal(false)}
-            className="px-6 py-2 bg-gray-700 text-white rounded-lg font-bold hover:bg-gray-600"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={toggleMatchStatus}
-            className={`px-6 py-2 text-white rounded-lg font-bold ${
-              selectedMatch?.isActive
-                ? "bg-[#ff3366] hover:bg-[#ff4a80]"
-                : "bg-[#00ff88] hover:bg-[#00e677] text-black"
-            }`}
-          >
-            {selectedMatch?.isActive ? "Desativar" : "Ativar"}
           </button>
         </div>
       </Modal>
@@ -399,126 +334,53 @@ export default function Matches() {
                     </td>
                     {(userRole === "Admin" || userRole === "GM") && (
                       <td className="p-2">
-                        <div className="flex flex-col gap-1 items-center">
-                          {/* Debug: mostrar role */}
-                          <div className="text-xs text-gray-400 mb-1">
-                            Role: {userRole}
-                          </div>
-
-                          {/* Botões principais para partidas ativas */}
+                        <div className="flex flex-row gap-1 items-start justify-center">
+                          {/* Botão de finalizar para partidas ativas */}
                           {match.status === "Ativa" && (
-                            <div className="flex gap-1 mb-1">
-                              <button
-                                title="Finalizar Partida"
-                                onClick={() => finalizeMatch(match.matchId)}
-                                className="px-2 py-1 text-xs rounded cursor-pointer bg-green-600 font-bold text-white hover:bg-green-700 transition-colors"
-                              >
-                                <svg
-                                  className="w-3 h-3 inline mr-1"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>{" "}
-                                Finalizar
-                              </button>
-                              <button
-                                title="Cancelar Partida"
-                                onClick={() => cancelMatch(match.matchId)}
-                                className="px-2 py-1 text-xs rounded cursor-pointer bg-[#ff3366] font-bold text-white hover:bg-[#ff3366d0] transition-colors"
-                              >
-                                <svg
-                                  className="w-3 h-3 inline mr-1"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>{" "}
-                                Cancelar
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Botões de gerenciamento */}
-                          <div className="flex items-center gap-1 ">
                             <button
-                              title={
-                                match.isActive
-                                  ? "Desativar Partida"
-                                  : "Ativar Partida"
-                              }
-                              onClick={() => openToggleModal(match)}
-                              className={`px-2 py-1 text-xs rounded cursor-pointer font-bold transition-colors ${
-                                match.isActive
-                                  ? "bg-orange-600 hover:bg-orange-700 text-white"
-                                  : "bg-[#00ff88] hover:bg-[#00e677] text-black"
-                              }`}
-                            >
-                              {match.isActive ? (
-                                <>
-                                  <svg
-                                    className="w-3 h-3 inline mr-1"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>{" "}
-                                  Pausar
-                                </>
-                              ) : (
-                                <>
-                                  <svg
-                                    className="w-3 h-3 inline mr-1"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>{" "}
-                                  Ativar
-                                </>
-                              )}
-                            </button>
-
-                            <button
-                              title="Deletar Partida"
-                              onClick={() => openDeleteModal(match)}
-                              className="px-2 py-1 text-xs rounded cursor-pointer bg-red-600 font-bold text-white hover:bg-red-700 transition-colors"
+                              title="Finalizar Partida"
+                              onClick={() => finalizeMatch(match.matchId)}
+                              className="px-2 py-1 text-xs rounded cursor-pointer bg-green-600 font-bold text-white hover:bg-green-700 transition-colors mb-1"
                             >
                               <svg
-                                className="w-3 h-3 inline mr-1"
+                                className="w-3 h-3 inline mr-1 "
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
                                 <path
                                   fillRule="evenodd"
-                                  d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
-                                  clipRule="evenodd"
-                                />
-                                <path
-                                  fillRule="evenodd"
-                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                                   clipRule="evenodd"
                                 />
                               </svg>{" "}
-                              Deletar
+                              Finalizar
                             </button>
-                          </div>
+                          )}
+
+                          {/* Botão de deletar */}
+                          <button
+                            title="Deletar Partida"
+                            onClick={() => openDeleteModal(match)}
+                            className="px-2 py-1 text-xs rounded cursor-pointer bg-red-600 font-bold text-white hover:bg-red-700 transition-colors"
+                          >
+                            <svg
+                              className="w-3 h-3 inline mr-1"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+                                clipRule="evenodd"
+                              />
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>{" "}
+                            Deletar
+                          </button>
                         </div>
                       </td>
                     )}

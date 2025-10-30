@@ -73,7 +73,7 @@ export default function Login() {
         <img
           src="/logohx.png"
           alt="Hxshield Logo"
-          className="mx-auto mb-4 w-60 h-36 "
+          className="mx-auto mb-4 w-72 h-36 object-cover"
         />
         <h1 className="text-2xl font-semibold text-center text-[#8D11ED] mb-6">
           Bem-vindo ao Hshield

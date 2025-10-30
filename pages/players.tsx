@@ -85,6 +85,20 @@ export default function Players() {
     return new Date(date).toLocaleString('pt-BR');
   };
 
+  // Função para formatar CPF
+  const formatCPF = (cpf: string | null | undefined): string => {
+    if (!cpf) return "Não informado";
+    // Remove tudo que não é número
+    const numbers = cpf.replace(/\D/g, "");
+    if (numbers.length === 0) return "Não informado";
+    // Se tiver mais de 11 dígitos, pega apenas os últimos 11
+    // Se tiver menos de 11, retorna como está (pode ser incompleto)
+    const cpfNumbers = numbers.length > 11 ? numbers.slice(-11) : numbers;
+    if (cpfNumbers.length !== 11) return cpf; // Retorna como está se não tiver 11 dígitos
+    // Aplica a máscara: 000.000.000-00
+    return `${cpfNumbers.slice(0, 3)}.${cpfNumbers.slice(3, 6)}.${cpfNumbers.slice(6, 9)}-${cpfNumbers.slice(9, 11)}`;
+  };
+
   const handleLogout = () => setShowLogout(true);
   const confirmLogout = () => {
     localStorage.clear();
@@ -223,7 +237,7 @@ export default function Players() {
                       </td>
                       <td className="p-3 text-[#eaeaea]">{player.email}</td>
                       <td className="p-3 text-[#eaeaea]">
-                        {player.cpf || "Não informado"}
+                        {formatCPF(player.cpf)}
                       </td>
                       <td className="p-3 text-[#eaeaea]">
                         {formatDate(player.createdAt)}

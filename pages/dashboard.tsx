@@ -54,7 +54,7 @@ export default function Dashboard() {
   const loadStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const [licenses, clients, detections, matchStats] = await Promise.all([
+      const [licenses, clients, detections, matchStats, bannedUsers] = await Promise.all([
         axios.get(`${API_URL}/license`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -67,21 +67,37 @@ export default function Dashboard() {
         axios.get(`${API_URL}/match/dashboard/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        axios.get(`${API_URL}/auth/users/banned`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => ({ data: [] })), // Se falhar, retorna array vazio
       ]);
       setStats({
-        totalLicenses: licenses.data.length,
-        activeLicenses: licenses.data.filter((l: any) => l.isActive).length,
-        totalClients: clients.data.length,
-        bannedClients: clients.data.filter((c: any) => c.isBanned).length,
-        totalDetections: detections.data.length,
-        unresolvedDetections: detections.data.filter((d: any) => !d.isResolved).length,
-        activePlayers: matchStats.data.activePlayers || 0,
-        totalPlayers: matchStats.data.totalPlayers || 0,
-        activeMatches: matchStats.data.activeMatches || 0,
-        finishedMatches: matchStats.data.finishedMatches || 0,
+        totalLicenses: licenses.data?.length || 0,
+        activeLicenses: licenses.data?.filter((l: any) => l.isActive).length || 0,
+        totalClients: clients.data?.length || 0,
+        bannedClients: Array.isArray(bannedUsers.data) ? bannedUsers.data.length : 0,
+        totalDetections: detections.data?.length || 0,
+        unresolvedDetections: detections.data?.filter((d: any) => !d.isResolved).length || 0,
+        activePlayers: matchStats.data?.activePlayers || 0,
+        totalPlayers: matchStats.data?.totalPlayers || 0,
+        activeMatches: matchStats.data?.activeMatches || 0,
+        finishedMatches: matchStats.data?.finishedMatches || 0,
       });
-    } catch (error) {
-      console.error('Error loading stats:', error);
+    } catch (error: any) {
+      console.error('Error loading stats:', error.response?.data || error.message);
+      // Define valores padrão em caso de erro
+      setStats({
+        totalLicenses: 0,
+        activeLicenses: 0,
+        totalClients: 0,
+        bannedClients: 0,
+        totalDetections: 0,
+        unresolvedDetections: 0,
+        activePlayers: 0,
+        totalPlayers: 0,
+        activeMatches: 0,
+        finishedMatches: 0,
+      });
     } finally {
       setLoading(false);
     }
