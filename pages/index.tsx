@@ -187,15 +187,7 @@ export default function Login() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
-        {/* <div className="mt-4 text-center">
-          <a
-            href="/forgot-password"
-            className="text-white underline text-sm font-medium hover:text-[#8D11ED] transition"
-          >
-            Esqueci minha senha
-          </a>
-        </div> */}
-        <div className="h-1 rounded-full mx-auto bg-white mt-8"></div>
+        <div className="h-1 rounded-full mx-auto bg-white mt-12"></div>
         <p className="text-center text-white py-6">OU</p>
         <a href="/register">
           <button className="w-full py-2 cursor-pointer bg-[#8D11ED] hover:bg-[#7a0ed3] hover:scale-[1.02] transition-all text-white font-bold rounded-lg duration-200 focus:outline-none focus:ring-2 focus:ring-[#8D11ED] disabled:bg-[#8D11ED]">
