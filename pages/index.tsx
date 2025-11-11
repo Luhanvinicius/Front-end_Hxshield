@@ -55,6 +55,12 @@ export default function Login() {
         // Erro tratado pela API (400, 401, 403...)
         if (error.response.status === 401 || error.response.status === 400) {
           setError("Usuário ou senha inválidos");
+        } else if (error.response.status === 500) {
+          // Erro 500 do proxy - servidor não acessível
+          const errorMsg = error.response.data?.message || error.response.data?.error;
+          setServerError(
+            errorMsg || "Erro ao conectar com o servidor. Verifique se o servidor está rodando."
+          );
         } else {
           setServerError(
             error.response.data?.message || "Erro desconhecido do servidor."

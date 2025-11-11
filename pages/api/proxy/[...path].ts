@@ -116,9 +116,19 @@ export default async function handler(
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
     
+    // Retorna erro mais detalhado em desenvolvimento
+    const errorMessage = error.message || 'Erro desconhecido';
+    const isConnectionError = errorMessage.includes('fetch') || 
+                             errorMessage.includes('ECONNREFUSED') ||
+                             errorMessage.includes('ENOTFOUND') ||
+                             errorMessage.includes('timeout');
+    
     res.status(500).json({ 
-      message: 'Erro ao conectar com o servidor',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno do servidor'
+      message: isConnectionError 
+        ? 'Não foi possível conectar ao servidor. Verifique se o servidor está rodando e acessível.'
+        : 'Erro ao processar requisição',
+      error: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+      url: process.env.NODE_ENV === 'development' ? backendUrl : undefined
     });
   }
 }
