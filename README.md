@@ -1,4 +1,4 @@
-# BlackSecurity Web Panel
+# Hshield Web Panel
 
 Painel administrativo web para gerenciar licenças, clientes e detecções.
 

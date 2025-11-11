@@ -2,7 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/licenses": "pages/licenses.js",
+  "/matches": "pages/matches.js",
   "/banned": "pages/banned.js",
-  "/matches": "pages/matches.js"
+  "/licenses": "pages/licenses.js"
 }
