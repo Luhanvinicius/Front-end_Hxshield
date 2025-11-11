@@ -2,8 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/player-dashboard": "pages/player-dashboard.js",
-  "/dashboard": "pages/dashboard.js",
-  "/banned": "pages/banned.js"
+  "/licenses": "pages/licenses.js",
+  "/banned": "pages/banned.js",
+  "/matches": "pages/matches.js"
 }

@@ -115,8 +115,8 @@ export default function Sidebar({ currentPage }: SidebarProps) {
         { href: "/player-dashboard", label: "Histórico de partidas" },
         { href: "/gm-register", label: "Cadastro de GM" },
         { href: "/licenses", label: "Licenças" },
-        { href: "/clients", label: "Clientes" },
-        { href: "/detections", label: "Detecções" }
+        // { href: "/clients", label: "Clientes" },
+        // { href: "/detections", label: "Detecções" }
       );
     }
     // GM vê links específicos
@@ -124,12 +124,16 @@ export default function Sidebar({ currentPage }: SidebarProps) {
       links.push(
         { href: "/gm-dashboard", label: "Dashboard" },
         { href: "/player-dashboard", label: "Histórico de partidas" },
-        { href: "/matches", label: "Partidas" }
+        { href: "/matches", label: "Partidas" },
+        { href: "/banned", label: "Lista de Banidos" }
       );
     }
     // Usuário comum vê apenas dashboard de player
     else {
-      links.push({ href: "/player-dashboard", label: "Histórico de partidas" });
+      links.push(
+        { href: "/player-dashboard", label: "Histórico de partidas" },
+        { href: "/banned", label: "Lista de Banidos" }
+      );
     }
 
     return links.map((link) => (
