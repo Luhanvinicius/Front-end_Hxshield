@@ -136,15 +136,44 @@ export default function Sidebar({ currentPage }: SidebarProps) {
       );
     }
 
-    return links.map((link) => (
-      <a
-        key={link.href}
-        href={link.href}
-        className={getNavLinkClass(link.href.replace("/", ""))}
-      >
-        {link.label}
-      </a>
-    ));
+    // Download aparece para todos os roles
+    const downloadUrl = "https://cdn.discordapp.com/attachments/1369124966901088347/1437991281669177485/HSHIELD.exe?ex=6915413e&is=6913efbe&hm=92ddbdf13269f34e55827dda420d2cd65ce88458494ddc9e69a422a570556d68&";
+
+    return (
+      <>
+        {links.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className={getNavLinkClass(link.href.replace("/", ""))}
+          >
+            {link.label}
+          </a>
+        ))}
+        <a
+          href={downloadUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-gray-400 hover:bg-[#7a0ed3] hover:text-[#eaeaea] px-4 py-2 rounded transition text-base flex items-center gap-2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
+          Download
+        </a>
+      </>
+    );
   };
 
   const confirmLogout = () => {
