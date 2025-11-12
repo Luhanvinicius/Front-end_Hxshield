@@ -6,7 +6,7 @@
 **Obrigatória** - Usada pelo proxy server-side para conectar ao backend
 
 - **Nome:** `BACKEND_API_URL`
-- **Valor:** `http://108.165.179.162:5000/api`
+- **Valor:** `https://api.hshield.pro/api` (HTTPS com SSL instalado)
 - **Ambientes:** Production, Preview, Development (marque todos)
 - **Descrição:** URL completa do backend API (com `/api` no final)
 
@@ -16,7 +16,7 @@
 3. Clique em **Add New**
 4. Preencha:
    - **Name:** `BACKEND_API_URL`
-   - **Value:** `http://108.165.179.162:5000/api`
+   - **Value:** `https://api.hshield.pro/api`
    - Marque: ☑ Production, ☑ Preview, ☑ Development
 5. Clique em **Save**
 
@@ -28,7 +28,7 @@
 **Opcional** - Se configurada, o frontend usará esta URL diretamente (sem proxy)
 
 - **Nome:** `NEXT_PUBLIC_API_URL`
-- **Valor:** `http://108.165.179.162:5000/api`
+- **Valor:** `https://api.hshield.pro/api` (HTTPS)
 - **Ambientes:** Production, Preview, Development
 - **Descrição:** Se configurada, o frontend fará requisições diretas ao backend
 
@@ -43,13 +43,13 @@
 
 ### Configuração Mínima (Recomendada):
 ```
-BACKEND_API_URL = http://108.165.179.162:5000/api
+BACKEND_API_URL = https://api.hshield.pro/api
 ```
 
 ### Configuração Completa (Opcional):
 ```
-BACKEND_API_URL = http://108.165.179.162:5000/api
-NEXT_PUBLIC_API_URL = http://108.165.179.162:5000/api
+BACKEND_API_URL = https://api.hshield.pro/api
+NEXT_PUBLIC_API_URL = https://api.hshield.pro/api
 ```
 
 ---
@@ -59,28 +59,28 @@ NEXT_PUBLIC_API_URL = http://108.165.179.162:5000/api
 ### Com `BACKEND_API_URL` (Recomendado):
 1. Frontend faz requisição para: `/api/proxy/auth/login`
 2. Proxy server-side (Vercel) recebe a requisição
-3. Proxy encaminha para: `http://108.165.179.162:5000/api/auth/login`
+3. Proxy encaminha para: `https://api.hshield.pro/api/auth/login`
 4. Resposta volta pelo proxy para o frontend
 
 **Vantagens:**
 - ✅ Evita problemas de CORS
 - ✅ Mais seguro (backend não precisa expor CORS para frontend)
-- ✅ Funciona mesmo com HTTP no backend
+- ✅ Funciona com HTTPS (SSL instalado)
 
 ### Com `NEXT_PUBLIC_API_URL`:
-1. Frontend faz requisição direta para: `http://108.165.179.162:5000/api/auth/login`
+1. Frontend faz requisição direta para: `https://api.hshield.pro/api/auth/login`
 2. Backend precisa ter CORS configurado para aceitar requisições do domínio Vercel
 
 **Desvantagens:**
 - ⚠️ Requer CORS configurado no backend
-- ⚠️ Pode ter problemas com mixed-content (HTTPS → HTTP)
+- ⚠️ Requer certificado SSL no backend (já instalado)
 
 ---
 
 ## ✅ Checklist de Configuração
 
 - [ ] Variável `BACKEND_API_URL` adicionada na Vercel
-- [ ] Valor: `http://108.165.179.162:5000/api`
+- [ ] Valor: `https://api.hshield.pro/api`
 - [ ] Marcado para: Production, Preview, Development
 - [ ] Deploy feito após adicionar variável
 - [ ] Testado login no web deployado
@@ -98,8 +98,8 @@ NEXT_PUBLIC_API_URL = http://108.165.179.162:5000/api
 ## 📝 Notas Importantes
 
 1. **Sempre faça um novo deploy após adicionar variáveis de ambiente**
-2. **O valor deve terminar com `/api`** (ex: `http://108.165.179.162:5000/api`)
-3. **Não use HTTPS se o backend está em HTTP** (a menos que tenha certificado SSL)
+2. **O valor deve terminar com `/api`** (ex: `https://api.hshield.pro/api`)
+3. **Use HTTPS sempre** (SSL está instalado no backend)
 4. **O backend precisa estar acessível publicamente** (não pode estar em rede local)
 
 ---
@@ -117,6 +117,7 @@ NEXT_PUBLIC_API_URL = http://108.165.179.162:5000/api
 
 ### Backend não acessível:
 - Verifique se o servidor está rodando na VPS
-- Teste: `curl http://108.165.179.162:5000/api/health`
+- Teste: `curl https://api.hshield.pro/api/health`
 - Verifique firewall da VPS
+- Verifique se o reverse proxy está configurado no IIS
 

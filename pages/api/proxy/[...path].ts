@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 // URL do backend - pode ser configurada via variável de ambiente na Vercel
-// IP atualizado para: 108.165.179.162
-const BACKEND_URL = process.env.BACKEND_API_URL || 'http://108.165.179.162:5000/api';
+// API está em subdomínio separado: api.hshield.pro (VPS)
+// Web está em: www.hshield.pro (Vercel)
+const BACKEND_URL = process.env.BACKEND_API_URL || 'https://api.hshield.pro/api';
 
 // Desabilita o parsing automático do body pelo Next.js
 export const config = {
